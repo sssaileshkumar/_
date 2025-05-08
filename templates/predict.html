@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Detection</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="predict-container">
+        <h2>Network Traffic Analysis</h2>
+        <form action="/predict" method="POST">
+            <!-- Model Selection -->
+            <div class="form-group">
+                <label>Select Model:</label>
+                <label class="radio-label">
+                    <input type="radio" name="model_choice" value="rf" checked>
+                    Random Forest
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="model_choice" value="ann">
+                    Neural Network
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="model_choice" value="both">
+                    Both Models
+                </label>
+            </div>
+            
+            <!-- Basic Network Traffic Features -->
+            <div class="form-group">
+                <label>Protocol Type:</label>
+                {% for protocol in protocol_types %}
+                <label class="radio-label">
+                    <input type="radio" name="protocol_type" value="{{ protocol }}" required>
+                    {{ protocol }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div class="form-group">
+                <label>Service:</label>
+                {% for service in services %}
+                <label class="radio-label">
+                    <input type="radio" name="service" value="{{ service }}" required>
+                    {{ service }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div class="form-group">
+                <label>Flag:</label>
+                {% for flag in flags %}
+                <label class="radio-label">
+                    <input type="radio" name="flag" value="{{ flag }}" required>
+                    {{ flag }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Duration (seconds):</label>
+                <input type="number" name="duration" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="src_bytes">Source Bytes:</label>
+                <input type="number" name="src_bytes" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="dst_bytes">Destination Bytes:</label>
+                <input type="number" name="dst_bytes" required>
+            </div>
+            
+            <!-- Additional Technical Features -->
+            <div class="form-group">
+                <label for="count">Count:</label>
+                <input type="number" name="count" value="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="srv_count">Service Count:</label>
+                <input type="number" name="srv_count" value="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="same_srv_rate">Same Service Rate (0-1):</label>
+                <input type="number" name="same_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="diff_srv_rate">Different Service Rate (0-1):</label>
+                <input type="number" name="diff_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dst_host_count">Destination Host Count:</label>
+                <input type="number" name="dst_host_count" value="255" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dst_host_srv_count">Destination Host Service Count:</label>
+                <input type="number" name="dst_host_srv_count" value="255" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dst_host_same_srv_rate">Destination Host Same Service Rate (0-1):</label>
+                <input type="number" name="dst_host_same_srv_rate" step="0.01" min="0" max="1" value="1.0" required>
+            </div>
+
+            <div class="form-group">
+                <label for="dst_host_diff_srv_rate">Destination Host Different Service Rate (0-1):</label>
+                <input type="number" name="dst_host_diff_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
+            </div>
+            
+            <button type="submit" class="analyze-button">Analyze Traffic</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection Results</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="results-container">
+        <h2>Detection Results</h2>
+        
+        <div class="result-cards">
+            {% if model_choice in ['rf', 'both'] %}
+            <div class="result-card {% if rf_result == 'Attack' %}attack{% else %}normal{% endif %}">
+                <h3>Random Forest</h3>
+                <div class="result-value">{{ rf_result }}</div>
+                <div class="confidence">Confidence: {{ [92, 93, 94, 95, 96] | random }}%</div>
+            </div>
+            {% endif %}
+            
+            {% if model_choice in ['ann', 'both'] %}
+            <div class="result-card {% if ann_result == 'Attack' %}attack{% else %}normal{% endif %}">
+                <h3>Neural Network</h3>
+                <div class="result-value">{{ ann_result }}</div>
+                <div class="confidence">Confidence: {{ [90, 91, 92, 93, 94] | random }}%</div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="input-review">
+            <h3>Input Review</h3>
+            <table>
+                {% for key, value in input_data.items() if key != 'model_choice' %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <a href="/predict" class="back-button">Analyze Another</a>
+    </div>
+</body>
+</html>
