@@ -4,7 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detection Results</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Your existing styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #212529;
+        }
+        
+        .results-container {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 2rem;
+        }
+        
+        <!-- In the result-cards section, add flex-wrap for better mobile responsiveness -->
+        .result-cards {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .result-card {
+            width: 30%; /* Adjust for three cards */
+            min-width: 250px; /* Smaller minimum width */
+            /* rest remains the same */
+        }
+        .result-card.normal {
+            background-color: #4cc9f0;
+            color: white;
+        }
+        
+        .result-card.attack {
+            background-color: #f72585;
+            color: white;
+        }
+        
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        
+        .confidence {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .input-review table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        
+        .input-review td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.8rem 1.5rem;
+            background-color: #4361ee;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background-color: #3f37c9;
+        }
+    </style>
 </head>
 <body>
     <div class="results-container">
@@ -15,7 +91,15 @@
             <div class="result-card {% if rf_result == 'Attack' %}attack{% else %}normal{% endif %}">
                 <h3>Random Forest</h3>
                 <div class="result-value">{{ rf_result }}</div>
-                <div class="confidence">Confidence: {{ [92, 93, 94, 95, 96] | random }}%</div>
+                <div class="confidence">Confidence: {{ rf_confidence }}%</div>
+            </div>
+            {% endif %}
+            
+            {% if model_choice in ['gb', 'both'] %}
+            <div class="result-card {% if gb_result == 'Attack' %}attack{% else %}normal{% endif %}">
+                <h3>Gradient Boosting</h3>
+                <div class="result-value">{{ gb_result }}</div>
+                <div class="confidence">Confidence: {{ gb_confidence }}%</div>
             </div>
             {% endif %}
             
@@ -23,7 +107,7 @@
             <div class="result-card {% if ann_result == 'Attack' %}attack{% else %}normal{% endif %}">
                 <h3>Neural Network</h3>
                 <div class="result-value">{{ ann_result }}</div>
-                <div class="confidence">Confidence: {{ [90, 91, 92, 93, 94] | random }}%</div>
+                <div class="confidence">Confidence: {{ ann_confidence }}%</div>
             </div>
             {% endif %}
         </div>

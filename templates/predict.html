@@ -4,7 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Detection</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Your existing styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #212529;
+        }
+        
+        .predict-container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .radio-label {
+            display: inline-block;
+            margin-right: 1rem;
+            cursor: pointer;
+        }
+        
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .analyze-button {
+            background-color: #4361ee;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .analyze-button:hover {
+            background-color: #3f37c9;
+        }
+    </style>
 </head>
 <body>
     <div class="predict-container">
@@ -18,102 +75,68 @@
                     Random Forest
                 </label>
                 <label class="radio-label">
+                    <input type="radio" name="model_choice" value="gb">
+                    Gradient Boosting
+                </label>
+                <label class="radio-label">
                     <input type="radio" name="model_choice" value="ann">
                     Neural Network
                 </label>
                 <label class="radio-label">
                     <input type="radio" name="model_choice" value="both">
-                    Both Models
+                    All Models
                 </label>
             </div>
             
-            <!-- Basic Network Traffic Features -->
+            <!-- Categorical Features -->
             <div class="form-group">
-                <label>Protocol Type:</label>
-                {% for protocol in protocol_types %}
-                <label class="radio-label">
-                    <input type="radio" name="protocol_type" value="{{ protocol }}" required>
-                    {{ protocol }}
-                </label>
-                {% endfor %}
-            </div>
-            
-            <div class="form-group">
-                <label>Service:</label>
-                {% for service in services %}
-                <label class="radio-label">
-                    <input type="radio" name="service" value="{{ service }}" required>
-                    {{ service }}
-                </label>
-                {% endfor %}
+                <label for="protocol_type">Protocol Type:</label>
+                <select name="protocol_type" required>
+                    {% for protocol in protocol_types %}
+                    <option value="{{ protocol }}">{{ protocol }}</option>
+                    {% endfor %}
+                </select>
             </div>
             
             <div class="form-group">
-                <label>Flag:</label>
-                {% for flag in flags %}
-                <label class="radio-label">
-                    <input type="radio" name="flag" value="{{ flag }}" required>
-                    {{ flag }}
-                </label>
-                {% endfor %}
+                <label for="service">Service:</label>
+                <select name="service" required>
+                    {% for service in services %}
+                    <option value="{{ service }}">{{ service }}</option>
+                    {% endfor %}
+                </select>
             </div>
             
+            <div class="form-group">
+                <label for="flag">Flag:</label>
+                <select name="flag" required>
+                    {% for flag in flags %}
+                    <option value="{{ flag }}">{{ flag }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Numerical Features -->
             <div class="form-group">
                 <label for="duration">Duration (seconds):</label>
-                <input type="number" name="duration" step="0.01" required>
+                <input type="number" name="duration" step="0.01" value="0" required>
             </div>
             
             <div class="form-group">
                 <label for="src_bytes">Source Bytes:</label>
-                <input type="number" name="src_bytes" required>
+                <input type="number" name="src_bytes" value="0" required>
             </div>
             
             <div class="form-group">
                 <label for="dst_bytes">Destination Bytes:</label>
-                <input type="number" name="dst_bytes" required>
+                <input type="number" name="dst_bytes" value="0" required>
             </div>
             
-            <!-- Additional Technical Features -->
             <div class="form-group">
-                <label for="count">Count:</label>
-                <input type="number" name="count" value="1" required>
+                <label for="wrong_fragment">Wrong Fragments:</label>
+                <input type="number" name="wrong_fragment" value="0" min="0" required>
             </div>
 
-            <div class="form-group">
-                <label for="srv_count">Service Count:</label>
-                <input type="number" name="srv_count" value="1" required>
-            </div>
-
-            <div class="form-group">
-                <label for="same_srv_rate">Same Service Rate (0-1):</label>
-                <input type="number" name="same_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
-            </div>
-
-            <div class="form-group">
-                <label for="diff_srv_rate">Different Service Rate (0-1):</label>
-                <input type="number" name="diff_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
-            </div>
-
-            <div class="form-group">
-                <label for="dst_host_count">Destination Host Count:</label>
-                <input type="number" name="dst_host_count" value="255" required>
-            </div>
-
-            <div class="form-group">
-                <label for="dst_host_srv_count">Destination Host Service Count:</label>
-                <input type="number" name="dst_host_srv_count" value="255" required>
-            </div>
-
-            <div class="form-group">
-                <label for="dst_host_same_srv_rate">Destination Host Same Service Rate (0-1):</label>
-                <input type="number" name="dst_host_same_srv_rate" step="0.01" min="0" max="1" value="1.0" required>
-            </div>
-
-            <div class="form-group">
-                <label for="dst_host_diff_srv_rate">Destination Host Different Service Rate (0-1):</label>
-                <input type="number" name="dst_host_diff_srv_rate" step="0.01" min="0" max="1" value="0.0" required>
-            </div>
-            
             <button type="submit" class="analyze-button">Analyze Traffic</button>
         </form>
     </div>

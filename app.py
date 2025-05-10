@@ -1,37 +1,45 @@
 from flask import Flask, render_template, request
 import joblib
 import numpy as np
+import pandas as pd
 
 app = Flask(__name__)
 
-# Load models and preprocessing objects
+# Load trained model pipelines
 try:
-    rf_model = joblib.load('rf_model.pkl')
-    ann_model = joblib.load('ann_model.pkl')
-    scaler = joblib.load('scaler.pkl')
-    protocol_encoder = joblib.load('protocol_type_encoder.pkl')
-    service_encoder = joblib.load('service_encoder.pkl')
-    flag_encoder = joblib.load('flag_encoder.pkl')
+    rf_model = joblib.load('rf_pipeline.pkl')
+    gb_model = joblib.load('gb_pipeline.pkl')
+    ann_model = joblib.load('ann_pipeline.pkl')
 except Exception as e:
-    print(f"Error loading models: {e}")
+    print(f"❌ Failed to load model files: {e}")
     exit(1)
 
-# Feature list (must match training)
+# Input feature list (must match training exactly)
 features = [
-    'duration', 'protocol_type', 'service', 'flag',
-    'src_bytes', 'dst_bytes', 'count', 'srv_count',
-    'same_srv_rate', 'dst_host_srv_count'
+    'protocol_type', 'service', 'flag',
+    'duration', 'src_bytes', 'dst_bytes', 'wrong_fragment'
 ]
+# Extract categories for dropdowns from the preprocessing pipeline
+try:
+    preprocessor = rf_model.named_steps['preprocessor']
+    protocol_types = preprocessor.named_transformers_['cat'].categories_[0].tolist()
+    services = preprocessor.named_transformers_['cat'].categories_[1].tolist()
+    flags = preprocessor.named_transformers_['cat'].categories_[2].tolist()
+except Exception as e:
+    print(f"⚠️ Could not extract categories: {e}")
+    # Fallback values
+    protocol_types = ['tcp', 'udp', 'icmp']
+    services = ['http', 'ftp', 'smtp', 'domain', 'other']
+    flags = ['SF', 'S0', 'REJ', 'RSTO', 'SH']
 
-def get_prediction_result(proba):
-    """Handle single-class or multi-class probability arrays"""
-    if len(proba) == 1:  # Only one class exists
-        return "Normal" if proba[0] > 0.5 else "Attack"
-    else:  # Two classes exist
-        return "Attack" if proba[1] > 0.5 else "Normal"
+def interpret_prediction(probabilities):
+    """Convert prediction probabilities into label."""
+    if len(probabilities) == 1:
+        return "Normal" if probabilities[0] > 0.5 else "Attack"
+    return "Attack" if probabilities[1] > 0.5 else "Normal"
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
 @app.route('/predict', methods=['GET', 'POST'])
@@ -39,57 +47,47 @@ def predict():
     if request.method == 'POST':
         try:
             form_data = request.form.to_dict()
-            model_choice = form_data.pop('model_choice', 'both')
-            
-            # Create feature vector
-            input_features = []
-            for feature in features:
-                if feature in ['protocol_type', 'service', 'flag']:
-                    encoder = {
-                        'protocol_type': protocol_encoder,
-                        'service': service_encoder,
-                        'flag': flag_encoder
-                    }[feature]
-                    input_features.append(encoder.transform([form_data[feature]])[0])
-                else:
-                    input_features.append(float(form_data[feature]))
-            
-            input_array = np.array(input_features).reshape(1, -1)
-            scaled_input = scaler.transform(input_array)
-            
-            results = {
-                'rf_result': None,
-                'rf_confidence': None,
-                'ann_result': None,
-                'ann_confidence': None
-            }
-            
-            if model_choice in ['rf', 'both']:
-                rf_proba = rf_model.predict_proba(scaled_input)[0]
-                results['rf_result'] = get_prediction_result(rf_proba)
-                results['rf_confidence'] = round(max(rf_proba) * 100, 1)
-            
-            if model_choice in ['ann', 'both']:
-                ann_proba = ann_model.predict_proba(scaled_input)[0]
-                results['ann_result'] = get_prediction_result(ann_proba)
-                results['ann_confidence'] = round(max(ann_proba) * 100, 1)
-            
-            return render_template('results.html',
-                                model_choice=model_choice,
-                                input_data={k:v for k,v in form_data.items() if k != 'model_choice'},
-                                **results)
-        
+            selected_model = form_data.pop('model_choice', 'rf')
+
+            # Ensure all expected features are present
+            input_data = {k: form_data[k] for k in features if k in form_data}
+            input_df = pd.DataFrame([input_data])
+
+            # Results dictionary
+            output = {}
+
+            if selected_model in ['rf', 'both']:
+                rf_proba = rf_model.predict_proba(input_df)[0]
+                output['rf_result'] = interpret_prediction(rf_proba)
+                output['rf_confidence'] = round(max(rf_proba) * 100, 2)
+
+            if selected_model in ['gb', 'both']:
+                gb_proba = gb_model.predict_proba(input_df)[0]
+                output['gb_result'] = interpret_prediction(gb_proba)
+                output['gb_confidence'] = round(max(gb_proba) * 100, 2)
+
+            if selected_model in ['ann', 'both']:
+                ann_proba = ann_model.predict_proba(input_df)[0]
+                output['ann_result'] = interpret_prediction(ann_proba)
+                output['ann_confidence'] = round(max(ann_proba) * 100, 2)
+
+            return render_template(
+                'results.html',
+                model_choice=selected_model,
+                input_data=input_data,
+                **output
+            )
+
         except Exception as e:
-            return render_template('error.html', error_message=str(e))
-    
-    # GET request - show form
-    try:
-        return render_template('predict.html',
-                            protocol_types=list(protocol_encoder.classes_),
-                            services=list(service_encoder.classes_),
-                            flags=list(flag_encoder.classes_))
-    except Exception as e:
-        return render_template('error.html', error_message=str(e))
+            return render_template('error.html', error_message=f"Prediction failed: {e}")
+
+    # GET method - render input form
+    return render_template(
+        'predict.html',
+        protocol_types=protocol_types,
+        services=services,
+        flags=flags
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
